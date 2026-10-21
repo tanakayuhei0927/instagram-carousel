@@ -9,11 +9,12 @@ pip install Pillow
 python3 make_slide_01.py   # -> slide_01.png（表紙）
 python3 make_slide_02.py   # -> slide_02.png（共感：陥りやすいループ）
 python3 make_slide_03.py   # -> slide_03.png（攻略の基本：3つのヒント）
+python3 make_slide_04.py   # -> slide_04.png（攻略①：野菜・きのこアイテム）
 ```
 
 実行後、全テキストについて「キャンバス／枠からのはみ出し」と「欠けた字形（豆腐）」を自動チェックし、結果を表示します（矢印・アイコンなどの装飾と文字の重なりも確認）。
 
-配色・フォント・文字描画とチェック・RPGウィンドウ・ピクセル部品・リス（表情とポーズ）は `rpg_common.py` に共通化しています。各 `make_slide_XX.py` は背景とレイアウトだけを持ちます。
+配色・フォント・文字描画とチェック・RPGウィンドウ・ピクセル部品・ドット絵アイコン・リス（表情とポーズ）は `rpg_common.py` に共通化しています。各 `make_slide_XX.py` は背景とレイアウトだけを持ちます。
 
 ## フォント
 

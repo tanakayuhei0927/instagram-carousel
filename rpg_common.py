@@ -153,6 +153,7 @@ SWEAT_DROPS = {
     "limit": ((-2, 6), (21, 4)),
     "troubled": ((-2, 6), (21, 4)),
     "thinking": (),
+    "inspired": (),
 }
 
 
@@ -171,7 +172,16 @@ def paint_face(grid, expression):
     cheeks = [(3, 13), (4, 13), (17, 13), (18, 13)]
     nose = [(10, 13), (11, 13)]
 
-    if expression == "thinking":
+    if expression == "inspired":
+        put([(5, 7), (6, 6), (7, 7), (14, 7), (15, 6), (16, 7)], SQ_OUT)  # raised arched brows
+        round_eyes()
+        for ex in (6, 14):
+            grid[(ex + 1, 12)] = SQ_WHITE  # second glint: sparkling eyes
+        put(cheeks, SQ_PINK)
+        put(nose, SQ_OUT)
+        put([(9, 15), (10, 15), (11, 15), (12, 15), (9, 16), (12, 16), (10, 17), (11, 17)], SQ_OUT)
+        put([(10, 16), (11, 16)], SQ_PINK)  # open happy mouth
+    elif expression == "thinking":
         put([(4, 7), (5, 6), (6, 6), (7, 6), (13, 7), (14, 7), (15, 7)], SQ_OUT)  # one brow raised
         for ex in (6, 14):  # pupils up and to the side: looking up while pondering
             put([(ex + 1, 9), (ex + 1, 10), (ex, 10), (ex, 11), (ex + 1, 11)], SQ_EYE)
@@ -229,11 +239,12 @@ def paint_face(grid, expression):
             grid[k] = SQ_OUT
 
 
-def build_squirrel(expression="troubled", pose="hug"):
+def build_squirrel(expression="troubled", pose="hug", item=None, item_colors=None):
     """Return {(x, y): color} pixel grid of the squirrel.
 
     expression: "calm" / "worried" / "confused" / "limit" / "thinking" / "troubled" (cover).
-    pose: "hug" (paws on the stomach) / "think" (one paw on the chin).
+    pose: "hug" (paws on the stomach) / "think" (one paw on the chin) /
+          "hold" (holding `item` — icon rows drawn through `item_colors` — in front of the chest).
     """
     grid = {}
 
@@ -299,7 +310,21 @@ def build_squirrel(expression="troubled", pose="hug"):
 
     paint_face(grid, expression)
 
-    if pose == "think":
+    if pose == "hold":
+        for ax in (4, 17):
+            arm = ellipse_cells(ax, 22, 2, 3)
+            put_layer(arm, lambda c: shade_layer(grid, c, ax, 22, 2, 3, SQ_MAIN, SQ_SHADE, SQ_LIGHT))
+        if item:
+            iw = max(len(r) for r in item)
+            ix0 = round(10.5 - iw / 2)
+            for j, row in enumerate(item):
+                for i, ch in enumerate(row):
+                    if ch != ".":
+                        grid[(ix0 + i, 19 + j)] = item_colors[ch]
+        for px in (5.5, 15.5):  # paws gripping both sides of the item
+            paw = ellipse_cells(px, 23, 1.4, 1.4)
+            put_layer(paw, lambda c: [grid.__setitem__(k, SQ_LIGHT) for k in c])
+    elif pose == "think":
         # one arm folded across the belly, the other propped on it with the paw on the chin
         arm = ellipse_cells(9.5, 24, 3.6, 1.9)
         put_layer(arm, lambda c: shade_layer(grid, c, 9.5, 24, 3.6, 1.9, SQ_MAIN, SQ_SHADE, SQ_LIGHT))
@@ -381,6 +406,103 @@ def pixel_arrow(draw, cx, cy, direction, length=9, half=2, head=4, unit=6):
     ys = [y for _, y in ink]
     decor_boxes.append(("arrow-" + direction, (cx + min(xs) * unit, cy + min(ys) * unit,
                                                cx + (max(xs) + 1) * unit, cy + (max(ys) + 1) * unit)))
+
+
+# ---------------------------------------------------------------- pixel icons
+# rows of characters; "." = transparent, other characters map through a color dict
+
+NORI = (24, 52, 36)
+ICON_COLORS = {"X": INK, "C": CREAM, "R": RED, "Y": GOLD, "L": GOLD_LIGHT, "G": NORI,
+               "D": GOLD_DARK, "W": (255, 255, 255)}
+
+MUSHROOM = [
+    "...XXXX...",
+    ".XXRRRRXX.",
+    "XRRCRRRRRX",
+    "XRRRRRCRRX",
+    "XXXXXXXXXX",
+    "...XCCX...",
+    "...XCCX...",
+    "...XXXX...",
+]
+EGG = [
+    "..XXXXX...",
+    ".XCCCCCXX.",
+    "XCCCYYCCCX",
+    "XCCYLYYCCX",
+    "XCCYYYYCX.",
+    ".XCCYYCCX.",
+    "..XCCCCX..",
+    "...XXXX...",
+]
+ONIGIRI = [
+    "....XX....",
+    "...XCCX...",
+    "..XCCCCX..",
+    ".XCCCCCCX.",
+    "XCCCCCCCCX",
+    "XCCGGGGCCX",
+    "XCCGGGGCCX",
+    ".XXXXXXXX.",
+]
+BULB = [
+    "..XXXXX..",
+    ".XLLYYYX.",
+    "XLWYYYYYX",
+    "XLYYYYYYX",
+    "XYYYYYYYX",
+    ".XYYYYYX.",
+    "..XDDDX..",
+    "..XCCCX..",
+    "...XXX...",
+]
+
+LEAF_PALE = (196, 232, 150)
+SHIITAKE = (132, 80, 44)
+SHIITAKE_LIGHT = (176, 112, 64)
+VEG_COLORS = {"X": INK, "G": GREEN_LIGHT, "g": GREEN, "d": GREEN_DARK, "P": LEAF_PALE, "R": RED,
+              "W": (255, 255, 255), "C": CREAM, "B": SHIITAKE, "b": SHIITAKE_LIGHT, "r": (170, 44, 40)}
+
+CABBAGE = [
+    "...XXXX...",
+    ".XXPGGPXX.",
+    "XPGGPGGGPX",
+    "XGPgGGPGgX",
+    "XGgPGGgPGX",
+    "XgGGPgPGgX",
+    ".XgGGPGgX.",
+    "..XXXXXX..",
+]
+BROCCOLI = [
+    "..XXX.XXX.",
+    ".XGgGXGGgX",
+    "XGGgGGgGGX",
+    "XgGGGgGGgX",
+    ".XgGgGGgX.",
+    "..XXPPXX..",
+    "...XPPX...",
+    "...XXXX...",
+]
+SHIITAKE_ICON = [
+    "...XXXX...",
+    ".XXbbbbXX.",
+    "XbBBCBBBbX",
+    "XBBBBBCBBX",
+    "XXXXXXXXXX",
+    "...XCCX...",
+    "...XCCX...",
+    "...XXXX...",
+]
+TOMATO = [
+    "....XgX...",
+    "..XXgGgXX.",
+    ".XRRXgXRRX",
+    "XRWRRRRRRX",
+    "XRRRRRRRRX",
+    "XRRRRRRRrX",
+    ".XRRRRRrX.",
+    "..XXXXXX..",
+]
 
 
 def pixel_icon(draw, rows, colors, x, y, unit, name=None):

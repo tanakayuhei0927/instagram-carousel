@@ -9,58 +9,13 @@ from PIL import Image, ImageDraw
 
 from rpg_common import (
     CREAM, GOLD, GOLD_DARK, GOLD_LIGHT, GREEN, GREEN_DARK, GREEN_LIGHT,
-    INK, NAVY, NAVY_DEEP, NAVY_LIGHT, RED, ROOT, H, W,
+    INK, NAVY, NAVY_DEEP, NAVY_LIGHT, ROOT, H, W,
     build_squirrel, draw_squirrel, draw_text, fit_font, load_font, number_badge,
     pixel_icon, px_rect, rpg_window, verify_all,
+    BULB, EGG, ICON_COLORS, MUSHROOM, ONIGIRI,
 )
 
 OUT_PATH = ROOT / "slide_03.png"
-
-NORI = (24, 52, 36)
-ICON_COLORS = {"X": INK, "C": CREAM, "R": RED, "Y": GOLD, "L": GOLD_LIGHT, "G": NORI,
-               "D": GOLD_DARK, "W": (255, 255, 255)}
-
-MUSHROOM = [
-    "...XXXX...",
-    ".XXRRRRXX.",
-    "XRRCRRRRRX",
-    "XRRRRRCRRX",
-    "XXXXXXXXXX",
-    "...XCCX...",
-    "...XCCX...",
-    "...XXXX...",
-]
-EGG = [
-    "..XXXXX...",
-    ".XCCCCCXX.",
-    "XCCCYYCCCX",
-    "XCCYLYYCCX",
-    "XCCYYYYCX.",
-    ".XCCYYCCX.",
-    "..XCCCCX..",
-    "...XXXX...",
-]
-ONIGIRI = [
-    "....XX....",
-    "...XCCX...",
-    "..XCCCCX..",
-    ".XCCCCCCX.",
-    "XCCCCCCCCX",
-    "XCCGGGGCCX",
-    "XCCGGGGCCX",
-    ".XXXXXXXX.",
-]
-BULB = [
-    "..XXXXX..",
-    ".XLLYYYX.",
-    "XLWYYYYYX",
-    "XLYYYYYYX",
-    "XYYYYYYYX",
-    ".XYYYYYX.",
-    "..XDDDX..",
-    "..XCCCX..",
-    "...XXX...",
-]
 
 HINTS = [
     ("野菜やきのこで量を増やす", ["かさが増えて、お皿の満足感アップ。", "スープや炒め物に足すだけでもOK。"], MUSHROOM),
