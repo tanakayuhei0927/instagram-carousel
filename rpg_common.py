@@ -154,6 +154,7 @@ SWEAT_DROPS = {
     "troubled": ((-2, 6), (21, 4)),
     "thinking": (),
     "inspired": (),
+    "determined": (),
 }
 
 
@@ -172,7 +173,13 @@ def paint_face(grid, expression):
     cheeks = [(3, 13), (4, 13), (17, 13), (18, 13)]
     nose = [(10, 13), (11, 13)]
 
-    if expression == "inspired":
+    if expression == "determined":
+        put([(4, 7), (5, 7), (6, 8), (7, 8), (8, 9), (13, 9), (14, 8), (15, 8), (16, 7), (17, 7)], SQ_OUT)
+        round_eyes()  # looking straight ahead
+        put(cheeks, SQ_PINK)
+        put(nose, SQ_OUT)
+        put([(9, 16), (10, 16), (11, 16), (12, 15)], SQ_OUT)  # confident half smile
+    elif expression == "inspired":
         put([(5, 7), (6, 6), (7, 7), (14, 7), (15, 6), (16, 7)], SQ_OUT)  # raised arched brows
         round_eyes()
         for ex in (6, 14):
@@ -244,7 +251,8 @@ def build_squirrel(expression="troubled", pose="hug", item=None, item_colors=Non
 
     expression: "calm" / "worried" / "confused" / "limit" / "thinking" / "troubled" (cover).
     pose: "hug" (paws on the stomach) / "think" (one paw on the chin) /
-          "hold" (holding `item` — icon rows drawn through `item_colors` — in front of the chest).
+          "hold" (holding `item` — icon rows drawn through `item_colors` — in front of the chest) /
+          "fight" (fists raised, fighting stance).
     """
     grid = {}
 
@@ -310,7 +318,23 @@ def build_squirrel(expression="troubled", pose="hug", item=None, item_colors=Non
 
     paint_face(grid, expression)
 
-    if pose == "hold":
+    if pose == "fight":
+        # fists raised at both sides of the chest, the right one a little higher
+        for (ax, ay) in ((4, 22.5), (17, 22)):
+            arm = ellipse_cells(ax, ay, 2, 2.6)
+            put_layer(arm, lambda c: shade_layer(grid, c, ax, ay, 2, 2.6, SQ_MAIN, SQ_SHADE, SQ_LIGHT))
+        for (fx, fy) in ((2.8, 19.6), (18.2, 18.8)):
+            fist = ellipse_cells(fx, fy, 2.3, 2.1)
+            put_layer(fist, lambda c: [grid.__setitem__(k, SQ_LIGHT) for k in c])
+            for k in fist:  # bright top so the fists stand out from the fur
+                if (k[0], k[1] - 1) not in fist:
+                    grid[k] = SQ_BELLY
+            cx, cy = int(fx), int(fy)
+            for k in ((cx - 1, cy - 1), (cx - 1, cy), (cx + 1, cy - 1), (cx + 1, cy)):  # finger lines
+                grid[k] = SQ_SHADE
+            for dx in (-1, 0, 1):
+                grid[(cx + dx, cy + 1)] = SQ_MAIN
+    elif pose == "hold":
         for ax in (4, 17):
             arm = ellipse_cells(ax, 22, 2, 3)
             put_layer(arm, lambda c: shade_layer(grid, c, ax, 22, 2, 3, SQ_MAIN, SQ_SHADE, SQ_LIGHT))
@@ -502,6 +526,57 @@ TOMATO = [
     "XRRRRRRRrX",
     ".XRRRRRrX.",
     "..XXXXXX..",
+]
+
+
+MEAT = (196, 116, 52)
+MEAT_LIGHT = (232, 164, 84)
+FISH_BLUE = (132, 176, 214)
+FISH_LIGHT = (196, 222, 240)
+PROTEIN_COLORS = {"X": INK, "M": MEAT, "m": MEAT_LIGHT, "C": CREAM, "W": (255, 255, 255),
+                  "F": FISH_BLUE, "f": FISH_LIGHT, "D": CREAM_DARK, "Y": GOLD, "L": GOLD_LIGHT}
+
+DRUMSTICK = [
+    "..XXXX....",
+    ".XmmmmX...",
+    "XmmMMMMX..",
+    "XmMMMMMX..",
+    "XMMMMMMX..",
+    ".XMMMMXX..",
+    "..XXXXCX..",
+    ".....XCCX.",
+    "....XCWXCX",
+    ".....XX.X.",
+]
+FISH = [
+    "...XXXXX.....",
+    "..XffffFX..XX",
+    ".XfWXffFFXXFX",
+    "XffXXfFFFFFFX",
+    ".XFFFFFFFXXFX",
+    "..XFFFFFX..XX",
+    "...XXXXX.....",
+]
+BOILED_EGG = [
+    "...XXXX...",
+    "..XWWWWX..",
+    ".XWWWWWCX.",
+    ".XWWYYWCX.",
+    "XWWYLYYWCX",
+    "XWWYYYYWCX",
+    "XWWWYYWWCX",
+    ".XCWWWWCX.",
+    "..XXXXXX..",
+]
+TOFU = [
+    "..XXXXXXXX",
+    ".XWWWWWWXX",
+    "XWWWWWWXDX",
+    "XXXXXXXXDX",
+    "XCCCCCCXDX",
+    "XCCCCCCXDX",
+    "XCCCCCCXX.",
+    "XXXXXXXX..",
 ]
 
 
