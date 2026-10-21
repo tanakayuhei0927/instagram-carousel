@@ -87,7 +87,7 @@ def px_rect(draw, x0, y0, x1, y1, fill):
     draw.rectangle([x0, y0, x1 - 1, y1 - 1], fill=fill)
 
 
-def rpg_window(draw, x0, y0, x1, y1, bg=NAVY, step=6):
+def rpg_window(draw, x0, y0, x1, y1, bg=NAVY, step=6, dither=True):
     """16bit-style message window: ink / gold / cream / gold frame with notched corners."""
     s = step
     # outer ink with notched corners
@@ -106,7 +106,7 @@ def rpg_window(draw, x0, y0, x1, y1, bg=NAVY, step=6):
     # dithered gradient at the bottom of the window for depth
     iy0 = y0 + 3 * s + 3
     iy1 = y1 - 3 * s - 3
-    for yy in range(iy0, iy1, 6):
+    for yy in range(iy0, iy1, 6) if dither else ():
         t = (yy - iy0) / max(1, iy1 - iy0)
         if t < 0.78:
             continue
@@ -210,8 +210,86 @@ def shade_layer(grid, cells, cx, cy, rx, ry, main, shade, light):
             grid[(x, y)] = main
 
 
-def build_squirrel():
-    """Return {(x, y): color} pixel grid of a hungry, troubled squirrel."""
+WORRIED_BROWS = [(5, 8), (6, 8), (7, 7), (8, 7), (13, 7), (14, 7), (15, 8), (16, 8)]
+SWEAT_DROPS = {
+    "calm": (),
+    "worried": ((21, 4),),
+    "confused": ((-2, 6), (21, 4)),
+    "limit": ((-2, 6), (21, 4)),
+    "troubled": ((-2, 6), (21, 4)),
+}
+
+
+def paint_face(grid, expression):
+    def put(cells, color):
+        for k in cells:
+            grid[k] = color
+
+    def round_eyes():
+        for ex in (6, 14):  # 2x3 with highlight
+            for dy in range(3):
+                for dx in range(2):
+                    grid[(ex + dx, 10 + dy)] = SQ_EYE
+            grid[(ex, 10)] = SQ_WHITE
+
+    cheeks = [(3, 13), (4, 13), (17, 13), (18, 13)]
+    nose = [(10, 13), (11, 13)]
+
+    if expression == "calm":
+        round_eyes()
+        put(cheeks, SQ_PINK)
+        put(nose, SQ_OUT)
+        put([(9, 15), (10, 16), (11, 16), (12, 15)], SQ_OUT)  # smile
+    elif expression == "worried":
+        put(WORRIED_BROWS, SQ_OUT)
+        round_eyes()
+        put(cheeks, SQ_PINK)
+        put(nose, SQ_OUT)
+        put([(10, 16), (11, 16)], SQ_OUT)  # flat mouth
+    elif expression == "confused":
+        put([(5, 7), (6, 7), (7, 7), (14, 8), (15, 8), (16, 8)], SQ_OUT)  # uneven brows
+        for ex in (6, 14):  # small dot eyes
+            put([(ex, 11), (ex + 1, 11), (ex, 12), (ex + 1, 12)], SQ_EYE)
+        put(cheeks, SQ_PINK)
+        put(nose, SQ_OUT)
+        put([(8, 16), (9, 15), (10, 16), (11, 15), (12, 16), (13, 15)], SQ_OUT)  # wavy mouth
+    elif expression == "limit":
+        put(WORRIED_BROWS, SQ_OUT)
+        put([(5, 10), (6, 10), (7, 11), (6, 12), (5, 12)], SQ_EYE)  # >
+        put([(16, 10), (15, 10), (14, 11), (15, 12), (16, 12)], SQ_EYE)  # <
+        put([(6, 13), (6, 14), (6, 15), (15, 13), (15, 14), (15, 15)], SQ_TEAR)
+        put(cheeks, SQ_PINK)
+        put(nose, SQ_OUT)
+        put([(9, 15), (10, 15), (11, 15), (12, 15), (9, 16), (12, 16)], SQ_OUT)  # crying mouth
+        put([(10, 16), (11, 16)], SQ_PINK)
+    else:  # troubled (cover)
+        # worried eyebrows (inner ends raised)
+        for k in [(5, 8), (6, 8), (7, 7), (8, 7), (13, 7), (14, 7), (15, 8), (16, 8)]:
+            grid[k] = SQ_OUT
+        # eyes (2x3) with highlight
+        for ex in (6, 14):
+            for dy in range(3):
+                for dx in range(2):
+                    grid[(ex + dx, 10 + dy)] = SQ_EYE
+            grid[(ex, 10)] = SQ_WHITE
+        # tears
+        for k in [(6, 13), (6, 14), (15, 13), (15, 14), (15, 15)]:
+            grid[k] = SQ_TEAR
+        # cheeks
+        for k in [(3, 13), (4, 13), (17, 13), (18, 13)]:
+            grid[k] = SQ_PINK
+        # nose + wavy mouth
+        for k in [(10, 13), (11, 13)]:
+            grid[k] = SQ_OUT
+        for k in [(9, 16), (10, 15), (11, 15), (12, 16)]:  # troubled frown
+            grid[k] = SQ_OUT
+
+
+def build_squirrel(expression="troubled"):
+    """Return {(x, y): color} pixel grid of the squirrel.
+
+    expression: "calm" / "worried" / "confused" / "limit" / "troubled" (cover).
+    """
     grid = {}
 
     def put_layer(cells, painter):
@@ -274,26 +352,7 @@ def build_squirrel():
         if k in head:
             grid[k] = SQ_BELLY
 
-    # worried eyebrows (inner ends raised)
-    for k in [(5, 8), (6, 8), (7, 7), (8, 7), (13, 7), (14, 7), (15, 8), (16, 8)]:
-        grid[k] = SQ_OUT
-    # eyes (2x3) with highlight
-    for ex in (6, 14):
-        for dy in range(3):
-            for dx in range(2):
-                grid[(ex + dx, 10 + dy)] = SQ_EYE
-        grid[(ex, 10)] = SQ_WHITE
-    # tears
-    for k in [(6, 13), (6, 14), (15, 13), (15, 14), (15, 15)]:
-        grid[k] = SQ_TEAR
-    # cheeks
-    for k in [(3, 13), (4, 13), (17, 13), (18, 13)]:
-        grid[k] = SQ_PINK
-    # nose + wavy mouth
-    for k in [(10, 13), (11, 13)]:
-        grid[k] = SQ_OUT
-    for k in [(9, 16), (10, 15), (11, 15), (12, 16)]:  # troubled frown
-        grid[k] = SQ_OUT
+    paint_face(grid, expression)
 
     # --- arms clutching the stomach
     for ax in (7, 14):
@@ -303,7 +362,7 @@ def build_squirrel():
         grid[k] = SQ_SHADE
 
     # --- sweat drops near the head
-    for (sx, sy) in ((-2, 6), (21, 4)):
+    for (sx, sy) in SWEAT_DROPS[expression]:
         drop = {(sx, sy), (sx, sy + 1), (sx - 1, sy + 2), (sx, sy + 2), (sx + 1, sy + 2), (sx, sy + 3)}
         for c in outline(drop):
             grid[c] = SQ_OUT
