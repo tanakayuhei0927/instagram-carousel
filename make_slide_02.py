@@ -1,22 +1,20 @@
 """Instagram carousel slide 02 (empathy) — the restrict-hunger-snack loop.
 
 Usage: python3 make_slide_02.py  ->  slide_02.png (1080x1350)
-Shares palette, font, pixel helpers and the squirrel with make_slide_01.py.
 """
 import random
 import sys
-from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-import make_slide_01 as base
-from make_slide_01 import (
-    CREAM, CREAM_DARK, GOLD, GOLD_DARK, GOLD_LIGHT, GREEN, GREEN_DARK, GREEN_LIGHT,
-    INK, NAVY, NAVY_DEEP, NAVY_LIGHT, RED, H, W,
-    build_squirrel, draw_squirrel, draw_text, fit_font, load_font, outline, px_rect, rpg_window,
+from rpg_common import (
+    CREAM, GOLD, GOLD_DARK, GOLD_LIGHT, GREEN, GREEN_DARK, GREEN_LIGHT,
+    INK, NAVY, NAVY_DEEP, NAVY_LIGHT, RED, ROOT, H, W,
+    build_squirrel, decor_boxes, draw_squirrel, draw_text, fit_font, load_font, number_badge,
+    outline, pill, pixel_arrow, px_rect, rpg_window, verify_all,
 )
 
-OUT_PATH = Path(__file__).resolve().parent / "slide_02.png"
+OUT_PATH = ROOT / "slide_02.png"
 
 STEPS = [
     # (action, quote, mood label, expression, pill color, pill text color)
@@ -25,8 +23,6 @@ STEPS = [
     ("間食が気になる", "「おやつ食べたいかも…」", "困惑", "confused", GOLD_DARK, CREAM),
     ("さらに食事を減らす", "「もう限界…！」", "限界", "limit", RED, CREAM),
 ]
-
-decor_boxes = []  # arrows / emblem rects — text must not overlap them
 
 
 # ---------------------------------------------------------------- background
@@ -71,58 +67,6 @@ def draw_background(draw, field):
 
 # ---------------------------------------------------------------- parts
 
-def pixel_arrow(draw, cx, cy, direction, length=9, half=2, head=4, unit=6):
-    """Gold pixel arrow with ink outline. direction: right/left/up/down."""
-    cells = set()
-    for x in range(length):
-        for y in range(-half, half + 1):
-            cells.add((x, y))
-    for i in range(head + 1):
-        for y in range(-(head - i), head - i + 1):
-            cells.add((length + i, y))
-    total = length + head + 1
-    rot = {
-        "right": lambda x, y: (x - total // 2, y),
-        "left": lambda x, y: (total // 2 - x, y),
-        "down": lambda x, y: (y, x - total // 2),
-        "up": lambda x, y: (y, total // 2 - x),
-    }[direction]
-    cells = {rot(x, y) for x, y in cells}
-    ink = outline(cells)
-    for (x, y) in ink | cells:
-        c = GOLD if (x, y) in cells else INK
-        px_rect(draw, cx + x * unit, cy + y * unit, cx + (x + 1) * unit, cy + (y + 1) * unit, c)
-    # top highlight row
-    for (x, y) in cells:
-        if (x, y - 1) not in cells:
-            px_rect(draw, cx + x * unit, cy + y * unit, cx + (x + 1) * unit, cy + y * unit + 3, GOLD_LIGHT)
-    xs = [x for x, _ in ink]
-    ys = [y for _, y in ink]
-    decor_boxes.append(("arrow-" + direction, (cx + min(xs) * unit, cy + min(ys) * unit,
-                                               cx + (max(xs) + 1) * unit, cy + (max(ys) + 1) * unit)))
-
-
-def pill(draw, x1, y0, text, bg, fg, font, label):
-    """Right-aligned label pill with notched pixel corners."""
-    tw = font.getbbox(text)[2] - font.getbbox(text)[0]
-    x0 = x1 - tw - 40
-    y1 = y0 + 46
-    px_rect(draw, x0 + 4, y0, x1 - 4, y1, INK)
-    px_rect(draw, x0, y0 + 4, x1, y1 - 4, INK)
-    px_rect(draw, x0 + 4, y0 + 4, x1 - 4, y1 - 4, bg)
-    draw_text(draw, ((x0 + x1) // 2, (y0 + y1) // 2 - 1), text, font, fg,
-              label=label, container=(x0 + 4, y0 + 4, x1 - 4, y1 - 4))
-    return (x0, y0, x1, y1)
-
-
-def number_badge(draw, x0, y0, n, font):
-    x1, y1 = x0 + 48, y0 + 48
-    px_rect(draw, x0, y0, x1, y1, INK)
-    px_rect(draw, x0 + 4, y0 + 4, x1 - 4, y1 - 4, GOLD)
-    px_rect(draw, x0 + 4, y0 + 4, x1 - 4, y0 + 9, GOLD_LIGHT)
-    draw_text(draw, ((x0 + x1) // 2, (y0 + y1) // 2 - 2), str(n), font, INK,
-              label=f"badge-{n}", container=(x0 + 4, y0 + 4, x1 - 4, y1 - 4))
-
 
 def draw_card(img, draw, box, idx, step, fonts):
     action, quote, mood, expression, pill_bg, pill_fg = step
@@ -161,7 +105,6 @@ def loop_emblem(draw, cx, cy, font):
     decor_boxes.append(("emblem", (cx - rr - 3, cy - rr - 3, cx + rr + 3, cy + rr + 3)))
     draw_text(draw, (cx, cy - 2), "ループ", font, INK, label="emblem-text",
               container=(cx - r * 6, cy - r * 6, cx + r * 6, cy + r * 6))
-
 
 # ---------------------------------------------------------------- main
 
@@ -231,23 +174,7 @@ def main():
 
     img.save(OUT_PATH)
     print(f"saved: {OUT_PATH}")
-    return verify()
-
-
-def verify():
-    status = base.verify()  # canvas / container overflow + missing glyphs
-    print("\n--- decoration overlap check ---")
-    ok = True
-    for label, _, _, tb, _ in base.text_boxes:
-        for dname, db in decor_boxes:
-            if (label.startswith("note-") and dname == "note-arrow") or \
-                    (label == "emblem-text" and dname == "emblem"):
-                continue  # intended: arrow follows the note / text sits inside the emblem
-            if tb[0] < db[2] and db[0] < tb[2] and tb[1] < db[3] and db[1] < tb[3]:
-                ok = False
-                print(f"NG  {label} overlaps {dname}")
-    print("RESULT:", "NO OVERLAP" if ok else "OVERLAP FOUND")
-    return status or (0 if ok else 1)
+    return verify_all(allowed={("note-", "note-arrow"), ("emblem-text", "emblem")})
 
 
 if __name__ == "__main__":
