@@ -155,6 +155,7 @@ SWEAT_DROPS = {
     "thinking": (),
     "inspired": (),
     "determined": (),
+    "happy": (),
 }
 
 
@@ -173,7 +174,13 @@ def paint_face(grid, expression):
     cheeks = [(3, 13), (4, 13), (17, 13), (18, 13)]
     nose = [(10, 13), (11, 13)]
 
-    if expression == "determined":
+    if expression == "happy":
+        put([(5, 11), (6, 10), (7, 10), (8, 11), (13, 11), (14, 10), (15, 10), (16, 11)], SQ_EYE)  # ^ ^
+        put(cheeks, SQ_PINK)
+        put(nose, SQ_OUT)
+        put([(9, 15), (10, 15), (11, 15), (12, 15), (9, 16), (12, 16), (10, 17), (11, 17)], SQ_OUT)
+        put([(10, 16), (11, 16)], SQ_PINK)  # open smile
+    elif expression == "determined":
         put([(4, 7), (5, 7), (6, 8), (7, 8), (8, 9), (13, 9), (14, 8), (15, 8), (16, 7), (17, 7)], SQ_OUT)
         round_eyes()  # looking straight ahead
         put(cheeks, SQ_PINK)
@@ -577,6 +584,55 @@ TOFU = [
     "XCCCCCCXDX",
     "XCCCCCCXX.",
     "XXXXXXXX..",
+]
+
+
+BOWL_RED = (190, 56, 48)
+CRUST = (196, 128, 60)
+BOWL_BLUE = (132, 176, 214)
+SWEET_POTATO = (150, 70, 120)
+SWEET_POTATO_LIGHT = (186, 104, 152)
+STAPLE_COLORS = {"X": INK, "W": (255, 255, 255), "C": CREAM, "Y": GOLD, "L": GOLD_LIGHT, "D": GOLD_DARK,
+                 "R": BOWL_RED, "b": CRUST, "N": BOWL_BLUE, "P": SWEET_POTATO, "p": SWEET_POTATO_LIGHT}
+
+RICE_BOWL = [
+    "..XXXXXX..",
+    ".XWWWCWWX.",
+    "XWWWWWWCWX",
+    "XYYYYYYYYX",
+    "XRRRRRRRRX",
+    ".XRRRRRRX.",
+    "..XRRRRX..",
+    "...XXXX...",
+]
+BREAD = [
+    "..XXXXXX..",
+    ".XbbbbbbX.",
+    "XbCCCCCCbX",
+    "XbCCCCCCbX",
+    "XbCCCCCCbX",
+    "XbCCCCCCbX",
+    "XbCCCCCCbX",
+    "XXXXXXXXXX",
+]
+NOODLES = [
+    ".......X.X.",
+    "......XDXDX",
+    "..XXXXXDXDX",
+    ".XLYLYLYLX.",
+    "XYLYLYLYLYX",
+    "XXXXXXXXXXX",
+    "XNNNNNNNNNX",
+    ".XNNNNNNNX.",
+    "..XXXXXXX..",
+]
+SWEET_POTATO_ICON = [
+    "..XXXXXXX..",
+    ".XPPPPPPPX.",
+    "XPPpPPPPpLX",
+    "XPPPPpPPPLX",
+    ".XPPPPPPPX.",
+    "..XXXXXXX..",
 ]
 
 
