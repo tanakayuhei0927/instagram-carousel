@@ -192,9 +192,14 @@ def bubble(draw, cx, cy, text, font, fill, tail_to, pad_x=38, pad_y=26, bw=6):
     box = (l - pad_x, t - pad_y, r + pad_x, b + pad_y)
     radius = (box[3] - box[1]) // 2
     tx, ty = tail_to
-    edge_y = box[1] + 4 if ty < box[1] else box[3] - 4
-    bx = min(max(tx, box[0] + radius + 24), box[2] - radius - 24)
-    tail = [(bx - 24, edge_y), (tx, ty), (bx + 24, edge_y)]
+    if box[0] <= tx <= box[2]:  # tail out of the top or bottom edge
+        edge_y = box[1] + 4 if ty < box[1] else box[3] - 4
+        bx = min(max(tx, box[0] + radius + 24), box[2] - radius - 24)
+        tail = [(bx - 24, edge_y), (tx, ty), (bx + 24, edge_y)]
+    else:  # tail out of the left or right edge
+        edge_x = box[0] + 4 if tx < box[0] else box[2] - 4
+        by = (box[1] + box[3]) / 2
+        tail = [(edge_x, by - 18), (tx, ty), (edge_x, by + 18)]
     # black silhouette first, then the fill on top: one outline around box + tail
     draw.line(tail + [tail[0]], fill=BLACK, width=bw * 2, joint="curve")
     draw.polygon(tail, fill=BLACK)
@@ -298,3 +303,76 @@ def new_page(bg, dot):
     draw = ImageDraw.Draw(img)
     polka(draw, (0, 0, W, H), dot)
     return img, draw
+
+
+# ---------------------------------------------------------------- points & summary pages
+
+PINK_DOT = (255, 178, 206)
+PINK_LIGHT = (255, 194, 216)
+WAVE_GRAY = (206, 208, 214)
+
+
+def decor(draw, big, small, wave):
+    """Standard page decoration: wave band, big top-right circle, small
+    bottom-left circle and a wavy floor."""
+    wave_band(draw, -20, W + 20, 390, 30, 16, 180, wave)
+    circle(draw, 930, 200, 230, big)
+    circle(draw, 90, 1000, 150, small)
+    wave_floor(draw, 0, W, 1180, 24, 300, wave)
+
+
+def icon_disc(draw, cx, cy, r=74):
+    """White sticker disc that holds a small food icon."""
+    draw.ellipse((cx - r - 6, cy - r + 4, cx + r + 6, cy + r + 10), fill=BLACK)  # drop shadow
+    draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=WHITE, outline=BLACK, width=6)
+
+
+def item_row(draw, y, name, memo, fill, icon, x=70, gap=52):
+    """One line: icon disc, big item name, then a memo bubble right after the
+    name whose short tail points back at it."""
+    icon_disc(draw, x + 74, y)
+    icon(draw, x + 74, y)
+    name_font = load_font(54)
+    l, t, r, b = outlined_text(draw, (x + 176, y), name, name_font, stroke_w=9, anchor="lm",
+                               label=f"item {name}", fill_holes=True)
+    memo_font = load_font(38)
+    pad_x = 30
+    tw = draw.textlength(memo, font=memo_font) + 12
+    bubble(draw, r + gap + pad_x + tw / 2, y, memo, memo_font, fill, tail_to=(r + 10, y),
+           pad_x=pad_x)
+
+
+def small_note(draw, text):
+    """Small caveat at the bottom-left, on the same baseline as the swipe hint."""
+    outlined_text(draw, (70, H - 80), text, load_font(32), stroke_w=5, anchor="ls",
+                  label=f"note {text}", fill_holes=True)
+
+
+# ---------------------------------------------------------------- flat food icons (~60px radius)
+
+def icon_fish(draw, cx, cy, k=0.6):
+    draw.polygon([(cx + 40 * k, cy), (cx + 78 * k, cy - 26 * k), (cx + 78 * k, cy + 26 * k)],
+                 fill=FISH, outline=BLACK, width=4)
+    draw.ellipse((cx - 90 * k, cy - 30 * k, cx + 50 * k, cy + 30 * k), fill=FISH,
+                 outline=BLACK, width=4)
+    draw.ellipse((cx - 64 * k, cy - 8 * k, cx - 52 * k, cy + 4 * k), fill=BLACK)
+
+
+def icon_mushroom(draw, cx, cy, k=1.0):
+    draw.rounded_rectangle((cx - 11 * k, cy - 4 * k, cx + 11 * k, cy + 36 * k), radius=6 * k,
+                           fill=MUSH_STEM, outline=BLACK, width=4)
+    draw.chord((cx - 36 * k, cy - 34 * k, cx + 36 * k, cy + 22 * k), 180, 360,
+               fill=MUSH_CAP, outline=BLACK, width=4)
+
+
+def rice_bowl_full(draw, cx, cy, k=1.0, bowl=YELLOW):
+    """Bowl with a normal rounded mound of rice."""
+    draw.rounded_rectangle((cx - 34 * k, cy + 70 * k, cx + 34 * k, cy + 90 * k), radius=6 * k,
+                           fill=bowl, outline=BLACK, width=5)
+    draw.chord((cx - 92 * k, cy - 80 * k, cx + 92 * k, cy + 80 * k), 0, 180,
+               fill=bowl, outline=BLACK, width=5)
+    draw.chord((cx - 88 * k, cy - 66 * k, cx + 88 * k, cy + 66 * k), 180, 360,
+               fill=WHITE, outline=BLACK, width=5)
+    for dx, dy in ((-40, -30), (-6, -50), (30, -34), (54, -14), (-62, -12)):  # grains
+        draw.ellipse((cx + (dx - 7) * k, cy + (dy - 4) * k, cx + (dx + 7) * k, cy + (dy + 4) * k),
+                     outline=BOWL_IN, width=3)
