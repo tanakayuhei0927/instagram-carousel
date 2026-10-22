@@ -148,3 +148,62 @@ def new_page():
     draw = ImageDraw.Draw(img)
     draw_frame(draw)
     return img, draw
+
+
+# ---------------------------------------------------------------- checklist pages (slides 2+)
+
+BODY = (0xB8, 0xB8, 0xB8)  # body text: a slightly toned-down gray
+TEXT_L, TEXT_R = SAFE + 12, W - SAFE - 12  # content column inside the frame
+
+
+def fit_font(text, max_w, max_size, weight=900, min_size=40):
+    """Largest font (<= max_size) whose rendered text fits in max_w."""
+    for size in range(max_size, min_size - 1, -2):
+        font = load_font(size, weight)
+        if font.getlength(text) <= max_w:
+            return font
+    return load_font(min_size, weight)
+
+
+def draw_headline(img, draw, text, y=290, max_size=80):
+    """Centered white headline with a glowing neon underline."""
+    font = fit_font(text, TEXT_R - TEXT_L - 40, max_size)
+    l, t, r, b = draw_text(draw, (W // 2, y), text, font, label="headline")
+    uy = b + 30
+
+    def paint(d, glow):
+        d.line((l, uy, r, uy), fill=NEON + ((150,) if glow else (255,)), width=14 if glow else 7)
+
+    neon_layer(img, paint)
+    return ImageDraw.Draw(img)
+
+
+def checkbox(draw, x, y, size=58):
+    """Empty white-framed checkbox; (x, y) is its center-left."""
+    draw.rectangle((x, y - size // 2, x + size, y + size // 2), fill=PANEL, outline=WHITE, width=4)
+
+
+def checklist_rows(draw, rows, ys, box_x=TEXT_L + 16):
+    """Each row: empty checkbox, item name, and a gray memo on the line below.
+    Thin dim rules separate the rows."""
+    text_x = box_x + 58 + 36
+    max_w = TEXT_R - text_x
+    for i, ((name, memo), y) in enumerate(zip(rows, ys)):
+        checkbox(draw, box_x, y)
+        draw_text(draw, (text_x, y), name, fit_font(name, max_w, 54), anchor="lm",
+                  label=f"item {name}")
+        draw_text(draw, (text_x, y + 62), memo, fit_font(memo, max_w, 36, weight=500, min_size=28),
+                  fill=BODY, anchor="lm", label=f"memo {memo}")
+        if i < len(rows) - 1:
+            rule_y = (y + 62 + ys[i + 1]) / 2 + 6
+            draw.line((TEXT_L, rule_y, TEXT_R, rule_y), fill=LINE_DIM, width=2)
+
+
+def small_note(draw, lines, bottom_y=H - 196):
+    """Small gray caveat lines, left-aligned, ending just above the footer rule."""
+    font = load_font(28, 500)
+    step = 42
+    y = bottom_y - step * (len(lines) - 1)
+    for i, text in enumerate(lines):
+        draw_text(draw, (TEXT_L, y + i * step), text, font, fill=GRAY_TEXT, anchor="ls",
+                  label=f"note {i + 1}")
