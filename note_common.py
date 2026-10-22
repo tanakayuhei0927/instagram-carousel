@@ -238,6 +238,11 @@ def draw_marker_point(img, draw, text, y, size=72):
 
 def draw_fish_plate(draw, px, py, k, w):
     hand_path(draw, arc_points(px, py, 150 * k, 58 * k, 0, 365), w(4))
+    draw_fish(draw, px, py, k, w)
+
+
+def draw_fish(draw, px, py, k, w):
+    """Simple side-view fish, centered slightly left of (px, py)."""
     fish = (arc_points(px - 15 * k, py, 78 * k, 26 * k, 200, 340, 20)
             + arc_points(px - 15 * k, py, 78 * k, 26 * k, 20, 160, 20))
     hand_path(draw, fish + [fish[0]], w(4))
@@ -318,6 +323,46 @@ def draw_meal(draw, cx=540, cy=625, s=1.0, veg=False):
     hand_path(draw, [P(470, 752), P(640, 742)], w(4))
     hand_path(draw, [P(470, 764), P(640, 760)], w(4))
     return x0, y0, x1, y1
+
+
+def checkbox(draw, x, y, size=60):
+    """Hand-drawn ticked checkbox with its top-left corner at (x, y)."""
+    hand_path(draw, [(x, y), (x + size, y + 1), (x + size - 1, y + size),
+                     (x + 1, y + size - 1), (x, y)], 4)
+    hand_path(draw, [(x + 12, y + size * 0.5), (x + size * 0.42, y + size - 12),
+                     (x + size + 8, y - 10)], 6)
+
+
+def draw_checklist(img, draw, rows, row_y, box_x=110, doodle_x=880):
+    """Ticked items (name + "→ memo") with marker under each name and dashed separators.
+
+    The right-hand column (from doodle_x - 100) is left free for doodles.
+    """
+    name_font = load_font(60)
+    memo_font = load_font(38)
+    text_box = (SAFE, SAFE, doodle_x - 100, H - SAFE)
+    # marker under each item name first so the ink sits on top
+    for (name, _), y in zip(rows, row_y):
+        l, t, r, b = draw.textbbox((box_x + 100, y - 30), name, font=name_font, anchor="lm")
+        marker_stroke(img, l - 8, r + 8, b - 8, 40)
+    draw = ImageDraw.Draw(img)
+
+    for i, ((name, memo), y) in enumerate(zip(rows, row_y)):
+        checkbox(draw, box_x, y - 62)
+        draw_text(draw, (box_x + 100, y - 30), name, name_font, anchor="lm",
+                  label=f"item {name}", container=text_box)
+        draw_text(draw, (box_x + 100, y + 48), f"→ {memo}", memo_font, anchor="lm",
+                  label=f"memo {memo}", container=text_box)
+        if i < len(rows) - 1:  # dashed separator between rows
+            gap = (row_y[i + 1] - y) * 0.48
+            for x in range(box_x, W - 100, 30):
+                hand_path(draw, [(x, y + gap), (x + 14, y + gap)], 2)
+    return draw
+
+
+def draw_small_note(draw, text):
+    """Small caveat at the bottom-left, on the same baseline as the swipe hint."""
+    draw_text(draw, (100, H - 110), text, load_font(32), anchor="ls", label=f"note {text}")
 
 
 def draw_footer(draw):

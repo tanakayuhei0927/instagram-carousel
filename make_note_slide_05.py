@@ -5,11 +5,9 @@ and a small doodle, plus a small "個人差があります" note at the bottom.
 """
 import math
 
-from PIL import ImageDraw
-
-from note_common import (INK, ROOT, W, arc_points, draw_footer, draw_headline, draw_mushroom,
-                         draw_text, hand_path, load_font, marker_stroke, new_page,
-                         save_and_check, wobbly_ellipse)
+from note_common import (INK, ROOT, arc_points, draw_checklist, draw_footer, draw_headline,
+                         draw_mushroom, draw_small_note, hand_path, new_page, save_and_check,
+                         wobbly_ellipse)
 
 OUT_PATH = ROOT / "note_slide_05.png"
 
@@ -23,13 +21,6 @@ DOODLE_X = 880
 
 def pen(n):
     return n
-
-
-def checkbox(draw, x, y, size=60):
-    hand_path(draw, [(x, y), (x + size, y + 1), (x + size - 1, y + size),
-                     (x + 1, y + size - 1), (x, y)], 4)
-    hand_path(draw, [(x + 12, y + size * 0.5), (x + size * 0.42, y + size - 12),
-                     (x + size + 8, y - 10)], 6)
 
 
 def cabbage(draw, cx, cy, r=62):
@@ -59,24 +50,7 @@ def broccoli(draw, cx, cy, rx=62, ry=44):
 
 
 def draw_items(img, draw):
-    name_font = load_font(60)
-    memo_font = load_font(38)
-    # marker under each item name first so the ink sits on top
-    for (name, _), y in zip(ROWS, ROW_Y):
-        l, t, r, b = draw.textbbox((BOX_X + 100, y - 30), name, font=name_font, anchor="lm")
-        marker_stroke(img, l - 8, r + 8, b - 8, 40)
-    draw = ImageDraw.Draw(img)
-
-    for i, ((name, memo), y) in enumerate(zip(ROWS, ROW_Y)):
-        checkbox(draw, BOX_X, y - 62)
-        draw_text(draw, (BOX_X + 100, y - 30), name, name_font, anchor="lm",
-                  label=f"item {name}", container=(60, 60, DOODLE_X - 100, 1290))
-        draw_text(draw, (BOX_X + 100, y + 48), f"→ {memo}", memo_font, anchor="lm",
-                  label=f"memo {memo}", container=(60, 60, DOODLE_X - 100, 1290))
-        if i < len(ROWS) - 1:  # dashed separator between rows
-            for x in range(BOX_X, W - 100, 30):
-                hand_path(draw, [(x, y + 108), (x + 14, y + 108)], 2)
-
+    draw = draw_checklist(img, draw, ROWS, ROW_Y, BOX_X, DOODLE_X)
     cabbage(draw, DOODLE_X, ROW_Y[0])
     draw_mushroom(draw, DOODLE_X - 30, ROW_Y[1] - 24, 2.2, pen)
     draw_mushroom(draw, DOODLE_X + 40, ROW_Y[1] - 4, 1.6, pen)
@@ -88,8 +62,7 @@ def main():
     img, draw = new_page(5)
     draw_headline(draw, "ポイント①：野菜・きのこを先に")
     draw = draw_items(img, draw)
-    draw_text(draw, (100, 1240), "※個人差があります", load_font(32), anchor="ls",
-              label="note 個人差")
+    draw_small_note(draw, "※個人差があります")
     draw_footer(draw)
     save_and_check(img, OUT_PATH)
 
