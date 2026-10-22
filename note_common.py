@@ -35,6 +35,15 @@ def load_font(size):
     return ImageFont.truetype(str(FONT_PATH), size)
 
 
+def fit_font(text, max_w, max_size, min_size=40):
+    """Largest font (<= max_size) whose rendered text fits in max_w."""
+    for size in range(max_size, min_size - 1, -2):
+        font = load_font(size)
+        if font.getlength(text) <= max_w:
+            return font
+    return load_font(min_size)
+
+
 # ---------------------------------------------------------------- checks
 
 text_boxes = []  # (label, text, font, bbox, container)
@@ -206,6 +215,109 @@ def draw_header(draw, number):
 
     tag = load_font(40)
     draw_text(draw, (100, 230), "ごはんノート", tag, anchor="ls", label="series tag")
+
+
+def draw_headline(draw, text, y=340, max_size=84):
+    """Page headline with a hand-drawn ink underline (slides 2+)."""
+    font = fit_font(text, W - 2 * 90, max_size)
+    l, t, r, b = draw_text(draw, (W // 2, y), text, font, label="headline")
+    wobbly_line(draw, l, b + 22, r, b + 18, 5, INK, amp=2.0)
+
+
+def draw_marker_point(img, draw, text, y, size=72):
+    """Key phrase with a marker swipe under its lower half."""
+    font = load_font(size)
+    l, t, r, b = draw.textbbox((W // 2, y), text, font=font, anchor="mm")
+    marker_stroke(img, l - 14, r + 14, b - 10, 48)
+    draw = ImageDraw.Draw(img)
+    draw_text(draw, (W // 2, y), text, font, label=f"point {text}")
+    return draw
+
+
+# ---------------------------------------------------------------- food line drawings
+
+def draw_fish_plate(draw, px, py, k, w):
+    hand_path(draw, arc_points(px, py, 150 * k, 58 * k, 0, 365), w(4))
+    fish = (arc_points(px - 15 * k, py, 78 * k, 26 * k, 200, 340, 20)
+            + arc_points(px - 15 * k, py, 78 * k, 26 * k, 20, 160, 20))
+    hand_path(draw, fish + [fish[0]], w(4))
+    hand_path(draw, [(px + 60 * k, py), (px + 96 * k, py - 22 * k),
+                     (px + 96 * k, py + 22 * k), (px + 60 * k, py)], w(4))  # tail
+    draw.ellipse((px - 72 * k, py - 8 * k, px - 62 * k, py + 2 * k), fill=INK)  # eye
+
+
+def draw_mushroom(draw, x, y, k, w):
+    """Small shimeji-style mushroom: domed cap on a short stem."""
+    cap = arc_points(x, y, 24 * k, 18 * k, 180, 360, 16)
+    hand_path(draw, cap + [cap[0]], w(4))
+    hand_path(draw, [(x - 8 * k, y), (x - 7 * k, y + 28 * k),
+                     (x + 7 * k, y + 28 * k), (x + 8 * k, y)], w(4))
+
+
+def draw_salad_plate(draw, px, py, k, w):
+    """Plate of shredded cabbage with a couple of mushrooms on top."""
+    hand_path(draw, arc_points(px, py, 150 * k, 58 * k, 0, 365), w(4))
+    for dx, dy in ((-95, -6), (-70, -22), (-62, 12), (-38, -4), (-20, 22), (-10, -26)):
+        wobbly_line(draw, px + (dx - 22) * k, py + dy * k, px + (dx + 22) * k, py + (dy - 4) * k,
+                    w(3), INK, amp=3 * k, waves=1.0)
+    draw_mushroom(draw, px + 40 * k, py - 6 * k, k, w)
+    draw_mushroom(draw, px + 92 * k, py + 2 * k, k, w)
+
+
+def draw_rice_bowl(draw, bx, by, k, w):
+    """Rice bowl holding only a small mound of rice, sunk low."""
+    hand_path(draw, arc_points(bx, by, 96 * k, 24 * k, 0, 362), w(4))
+    hand_path(draw, arc_points(bx, by, 96 * k, 82 * k, 0, 180), w(5))
+    hand_path(draw, [(bx - 34 * k, by + 80 * k), (bx - 30 * k, by + 94 * k),
+                     (bx + 30 * k, by + 94 * k), (bx + 34 * k, by + 80 * k)], w(4))
+    hand_path(draw, arc_points(bx, by + 6 * k, 34 * k, 16 * k, 190, 350, 20), w(4))
+
+
+def draw_soup_bowl(draw, sx, sy, k, w, steam=True, mushrooms=False):
+    hand_path(draw, arc_points(sx, sy, 90 * k, 22 * k, 0, 362), w(4))
+    hand_path(draw, arc_points(sx, sy, 90 * k, 74 * k, 0, 180), w(5))
+    if steam:
+        for dx in (-30, 0, 30):
+            wobbly_line(draw, sx + dx * k, sy - 40 * k, sx + dx * k + 4 * k, sy - 90 * k,
+                        w(3), INK, amp=5 * k, waves=1.2)
+    if mushrooms:  # mushroom slices floating in the soup
+        for dx in (-40, 0, 40):
+            cap = arc_points(sx + dx * k, sy + 4 * k, 16 * k, 9 * k, 180, 360, 10)
+            hand_path(draw, cap + [cap[0]], w(3))
+
+
+def draw_meal(draw, cx=540, cy=625, s=1.0, veg=False):
+    """Tray meal with little rice. veg=True adds cabbage/mushroom dishes.
+
+    Drawn in a 700x310 box centered at (cx, cy), scaled by s.
+    """
+    def P(x, y):
+        return cx + (x - 540) * s, cy + (y - 625) * s
+
+    def w(n):
+        return max(1, round(n * s))
+
+    x0, y0 = P(190, 470)
+    x1, y1 = P(890, 780)
+    r = 30 * s
+    tray = (arc_points(x0 + r, y0 + r, r, r, 180, 270, 10)
+            + arc_points(x1 - r, y0 + r, r, r, 270, 360, 10)
+            + arc_points(x1 - r, y1 - r, r, r, 0, 90, 10)
+            + arc_points(x0 + r, y1 - r, r, r, 90, 180, 10))
+    hand_path(draw, tray + [tray[0]], w(5))
+
+    if veg:
+        draw_fish_plate(draw, *P(392, 566), s * 0.86, w)
+        draw_salad_plate(draw, *P(700, 566), s * 0.86, w)
+    else:
+        draw_fish_plate(draw, *P(540, 570), s, w)
+    draw_rice_bowl(draw, *P(340, 680), s, w)
+    draw_soup_bowl(draw, *P(740, 680), s, w, steam=not veg, mushrooms=veg)
+
+    # chopsticks along the bottom of the tray
+    hand_path(draw, [P(470, 752), P(640, 742)], w(4))
+    hand_path(draw, [P(470, 764), P(640, 760)], w(4))
+    return x0, y0, x1, y1
 
 
 def draw_footer(draw):
